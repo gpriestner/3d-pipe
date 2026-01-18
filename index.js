@@ -1,3 +1,5 @@
+const X = 0, Y = 1, Z = 2;
+
 const view = canvas.getContext("2d");
 
 function resize() {
@@ -7,12 +9,44 @@ function resize() {
 resize();
 window.addEventListener("resize", resize);
 
-view.beginPath();
-view.moveTo(100, 100);
-view.lineTo(200, 200);
-view.stroke();
+class Shape3d {
+    //model = [];
+    position = { x: 0, y: 0, z: 0 };
+    rotation = { x: 0, y: 0, z: 0 };
+    scale = 1;
+    projectPoints(camera) {
+        // for each point in model project to 2d screen space
+        const projected = [];
+        for (const vertex of this.model) {
+            const local = toLocalSpace({ x: vertex[X], y: vertex[Y], z: vertex[Z] }, this.rotation, this.scale);
+            const world = toWorldSpace(local, this.position);
+            const view = toViewSpace(world, camera);
+            const clip = toClipSpace(view, camera);
+            if (!clip) continue;
+            const ndc = toNormalizedDeviceCoordinates(clip);
+            if (!ndc) continue;
+            const screenPoint = toScreenSpace(ndc, canvas);
+            if (screenPoint) projected.push(screenPoint);
+        }
+        return projected;
+    }
+    draw(camera) {
+        const projected = this.projectPoints(camera);
+        for (const point of projected) {
+            drawPoint(point);
+        }
+    }
+}
 
-class Cube {
+class Camera {
+    position = { x: 0, y: 0, z: 0 };
+    rotation = { x: 0, y: 0, z: 0 };
+    static aspect = canvas.width / canvas.height;
+    projection = { fov: Math.PI / 2, near: 0.1, far: 1000 };
+    static { addEventListener("resize", () => { this.aspect = canvas.width / canvas.height; }); }
+}
+
+class Cube extends Shape3d {
     model = [
         [-1, -1, -1],
         [1, -1, -1],
@@ -81,31 +115,43 @@ function toWorldSpace(point, position) {
 
 function toViewSpace(point, camera) {
     // Translate relative to camera
-    const tx = subtract(point, camera.position);
+    const cp = subtract(point, camera.position);
 
     // Inverse rotate Y
-    const ry = rotateY(tx, -camera.rotation.y);
+    const ry = rotateY(cp, -camera.rotation.y);
 
     // Inverse rotate X
-    const rz = rotateX(ry, -camera.rotation.x);
+    const rx = rotateX(ry, -camera.rotation.x);
 
-    return rz;
+    return rx;
 }
 
-function toClipSpace(point, projection) {
-    const { fov, aspect, near, far } = projection;
+function toClipSpace(point, camera) {
+    const { fov, near, far } = camera.projection;
+    const aspect = Camera.aspect;
 
-    // Prevent divide by zero
-    if (point.z >= -near) return null; // Behind camera
+    // clip point if z is closer than near plane
+    if (!(point.z < -near)) return null;
+
+    // clip point if z is further than far plane
+    if (-point.z > far) return null;
 
     const f = 1 / Math.tan(fov * 0.5);
 
-    return {
-        x: point.x * f / aspect,
-        y: point.y * f,
-        z: (point.z - near) / (far - near),
-        w: -point.z
-    };
+    const A = (far + near) / (near - far);
+    const B = (2 * far * near) / (near - far);
+
+    const x_clip = point.x * (f / aspect);
+    const y_clip = point.y * f;
+    const z_clip = A * point.z + B;
+    const w_clip = -point.z; // positive in front of the camera for z < 0
+
+    // Frustum test in clip space: -w ≤ x,y,z ≤ w
+    if (Math.abs(x_clip) > w_clip) return null;      // left/right planes
+    if (Math.abs(y_clip) > w_clip) return null;      // top/bottom planes
+    if (z_clip < -w_clip || z_clip > w_clip) return null; // near/far in OpenGL
+
+    return { x: x_clip, y: y_clip, z: z_clip, w: w_clip };
 }
 
 // x,y in [-1, 1], z in [0, 1]
@@ -129,7 +175,7 @@ function toScreenSpace(ndc, screen) {
         visible:
             ndc.x >= -1 && ndc.x <= 1 &&
             ndc.y >= -1 && ndc.y <= 1 &&
-            ndc.z <= 0 && ndc.z >= -1
+            ndc.z >= 0 && ndc.z <= 1
     };
 }
 
@@ -141,11 +187,11 @@ function drawPoint(point) {
     view.fill();
 }
 
-function projectPoint(point, rotation, scale, position, camera, projection, screen) {
+function projectPoint(point, rotation, scale, position, camera, screen) {
     const local = toLocalSpace(point, rotation, scale);
     const world = toWorldSpace(local, position);
     const view = toViewSpace(world, camera);
-    const clip = toClipSpace(view, projection);
+    const clip = toClipSpace(view, camera);
     const ndc = toNormalizedDeviceCoordinates(clip);
     const screenPoint = toScreenSpace(ndc, screen);
     return screenPoint;
@@ -154,13 +200,28 @@ function projectPoint(point, rotation, scale, position, camera, projection, scre
 const vertex = { x: 0, y: 0, z: 0 };
 
 const projectedPoint = projectPoint(
-    vertex, 
+    vertex,
     { x: 0, y: 0, z: 0 }, // rotation
     1, // scale 
     { x: 0, y: 0, z: -5 }, // position
-    { position: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 } }, // camera 
-    { fov: Math.PI / 2, aspect: canvas.width / canvas.height, near: 1, far: 10 }, // projection
+    { position: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 }, projection: { fov: Math.PI / 2, near: 0.1, far: 1000 } }, // camera 
     canvas // screen
 );
 
-drawPoint(projectedPoint);
+//drawPoint(projectedPoint);
+
+const camera = new Camera();
+const cube = new Cube();
+cube.position.z = -5;
+
+
+function animate() {
+    requestAnimationFrame(animate);
+    view.clearRect(0, 0, canvas.width, canvas.height);
+    cube.rotation.x += 0.01;
+    //cube.rotation.y += 0.01;
+    //cube.position.x += 0.01;
+    //camera.position.z += 0.01;
+    cube.draw(camera);
+}
+animate();

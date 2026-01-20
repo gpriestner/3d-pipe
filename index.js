@@ -36,6 +36,9 @@ class Shape3d {
             drawPoint(point);
         }
     }
+    moveTo(p) { view.moveTo(p.x, p.y); }
+    lineTo(p) { view.lineTo(p.x, p.y); }
+    line(p1, p2) { view.moveTo(p1.x, p1.y); view.lineTo(p2.x, p2.y); }
 }
 
 class Camera {
@@ -57,7 +60,83 @@ class Cube extends Shape3d {
         [1, 1, 1],
         [-1, 1, 1],
     ];
+    draw(camera) {
+        view.strokeStyle = "black";
+        view.lineWidth = 4;
+        view.lineCap = "round";
+        const projected = this.projectPoints(camera);
+        view.beginPath();
+        // front face
+        this.line(projected[0], projected[1]);
+        this.line(projected[1], projected[2]);
+        this.line(projected[2], projected[3]);
+        this.line(projected[3], projected[0]);
+        // back face
+        this.line(projected[4], projected[5]);
+        this.line(projected[5], projected[6]);
+        this.line(projected[6], projected[7]);
+        this.line(projected[7], projected[4]);
+        // sides
+        this.line(projected[0], projected[4]);
+        this.line(projected[1], projected[5]);
+        this.line(projected[2], projected[6]);
+        this.line(projected[3], projected[7]);
+        view.stroke();
+    }
 }
+class Pyramid extends Shape3d {
+    model = [
+        [-1, -1, -1],
+        [1, -1, -1],
+        [0, 1, 0],
+        [-1, -1, 1],
+        [1, -1, 1]
+    ];
+    draw(camera) {
+        view.strokeStyle = "black";
+        view.lineWidth = 4;
+        view.lineCap = "round";
+        const projected = this.projectPoints(camera);
+        view.beginPath();
+        // base
+        this.line(projected[0], projected[1]);
+        this.line(projected[1], projected[4]);
+        this.line(projected[4], projected[3]);
+        this.line(projected[3], projected[0]);
+        // sides
+        this.line(projected[0], projected[2]);
+        this.line(projected[1], projected[2]);
+        this.line(projected[3], projected[2]);
+        this.line(projected[4], projected[2]);
+        view.stroke();
+    }
+}
+
+class TriangularPyramid extends Shape3d {
+    model = [
+        [0, 1, 0],
+        [-1, -1, -1],
+        [1, -1, -1],
+        [0, -1, 1]
+    ];
+    draw(camera) {
+        view.strokeStyle = "black";
+        view.lineWidth = 4;
+        view.lineCap = "round";
+        const projected = this.projectPoints(camera);
+        view.beginPath();
+        // base
+        this.line(projected[1], projected[2]);
+        this.line(projected[2], projected[3]);
+        this.line(projected[3], projected[1]);
+        // sides
+        this.line(projected[0], projected[1]);
+        this.line(projected[0], projected[2]);
+        this.line(projected[0], projected[3]);
+        view.stroke();
+    }
+}
+
 // Add vector to point
 function add(point, vector) {
     return {
@@ -89,6 +168,18 @@ function rotateX(point, angle) {
     const y = point.y * cosA - point.z * sinA;
     const z = point.y * sinA + point.z * cosA;
     return { x: point.x, y, z };
+}
+
+// Rotate a 3d point around an axis using Rodrigues rotation formula
+function rotate(point, axis, angle) {
+    const cosA = Math.cos(angle);
+    const sinA = Math.sin(angle);
+    const dot = point.x * axis.x + point.y * axis.y + point.z * axis.z;
+    return {
+        x: point.x * cosA + (axis.x * dot) * (1 - cosA) + (axis.y * point.z - axis.z * point.y) * sinA,
+        y: point.y * cosA + (axis.y * dot) * (1 - cosA) + (axis.z * point.x - axis.x * point.z) * sinA,
+        z: point.z * cosA + (axis.z * dot) * (1 - cosA) + (axis.x * point.y - axis.y * point.x) * sinA
+    };
 }
 
 function toLocalSpace(point, rotation, scale = 1) {
@@ -211,14 +302,40 @@ const projectedPoint = projectPoint(
 //drawPoint(projectedPoint);
 
 const camera = new Camera();
-const cube = new Cube();
+const cube = new TriangularPyramid();
 cube.position.z = -5;
 
+//#region GUI
+const gui = new dat.GUI();
+const cubeFolder = gui.addFolder("Cube");
+
+const positionFolder = cubeFolder.addFolder("Position");
+positionFolder.add(cube.position, "x", -10, 10, 0.1);
+positionFolder.add(cube.position, "y", -10, 10, 0.1);
+positionFolder.add(cube.position, "z", -50, 0, 0.1);
+positionFolder.open();
+const rotationFolder = cubeFolder.addFolder("Rotation");
+rotationFolder.add(cube.rotation, "x", 0, Math.PI * 2, 0.01);
+rotationFolder.add(cube.rotation, "y", 0, Math.PI * 2, 0.01);
+rotationFolder.open();
+cubeFolder.add(cube, "scale", 0.1, 10, 0.1);
+
+const cameraFolder = gui.addFolder("Camera");
+const cameraPositionFolder = cameraFolder.addFolder("Position");
+cameraPositionFolder.add(camera.position, "x", -10, 10, 0.1);
+cameraPositionFolder.add(camera.position, "y", -10, 10, 0.1);
+cameraPositionFolder.add(camera.position, "z", -50, 10, 0.1);
+cameraPositionFolder.open();
+const cameraRotationFolder = cameraFolder.addFolder("Rotation");
+cameraRotationFolder.add(camera.rotation, "x", -Math.PI * 2, Math.PI * 2, 0.01);
+cameraRotationFolder.add(camera.rotation, "y", -Math.PI * 2, Math.PI * 2, 0.01);
+cameraRotationFolder.open();
+//#endregion
 
 function animate() {
     requestAnimationFrame(animate);
     view.clearRect(0, 0, canvas.width, canvas.height);
-    cube.rotation.x += 0.01;
+    //cube.rotation.x += 0.01;
     //cube.rotation.y += 0.01;
     //cube.position.x += 0.01;
     //camera.position.z += 0.01;

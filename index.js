@@ -330,6 +330,11 @@ const cameraRotationFolder = cameraFolder.addFolder("Rotation");
 cameraRotationFolder.add(camera.rotation, "x", -Math.PI * 2, Math.PI * 2, 0.01);
 cameraRotationFolder.add(camera.rotation, "y", -Math.PI * 2, Math.PI * 2, 0.01);
 cameraRotationFolder.open();
+cameraProjectionFolder = cameraFolder.addFolder("Projection");
+cameraProjectionFolder.add(camera.projection, "fov", 0.1, Math.PI, 0.01);
+cameraProjectionFolder.add(camera.projection, "near", 0.1, 100, 0.1);
+cameraProjectionFolder.add(camera.projection, "far", 100, 2000, 1);
+cameraProjectionFolder.open();
 //#endregion
 
 function animate() {

@@ -1,5 +1,4 @@
 const X = 0, Y = 1, Z = 2;
-
 const view = canvas.getContext("2d");
 
 function resize() {
@@ -8,6 +7,56 @@ function resize() {
 }
 resize();
 window.addEventListener("resize", resize);
+class Key {
+    static #keys = {};
+    static {
+        window.addEventListener("keydown", Key.keyDown);
+        window.addEventListener("keyup", Key.keyUp);
+    }
+    static keyDown(e) { if (!e.repeat) Key.#keys[e.code] = true; }
+    static keyUp(e) { Key.#keys[e.code] = false; }
+    static keyOnce(key) {
+        const down = !!Key.#keys[key];
+        Key.#keys[key] = false;
+        return down;
+    }
+    static get Forward() { return !!Key.#keys.KeyW; }
+    static get Backward() { return !!Key.#keys.KeyS; }
+    static get StrafeLeft() { return !!Key.#keys.KeyA; }
+    static get StrafeRight() { return !!Key.#keys.KeyD; }
+    static get Reset() { return Key.keyOnce("KeyR") }
+    static get TurnLeft() { return !!Key.#keys.Comma || !!Key.#keys.ArrowLeft }
+    static get TurnRight() { return !!Key.#keys.Period || !!Key.#keys.ArrowRight }
+    static get Shift() { return !!Key.#keys.ShiftLeft || !!Key.#keys.ShiftRight }
+    static get Alt() { return !!Key.#keys.AltLeft || !!Key.#keys.AltRight }
+    static get TiltUp() { return !!Key.#keys.ArrowUp }
+    static get TiltDown() { return !!Key.#keys.ArrowDown }
+}
+Math.clamp = (val, min, max) => Math.min(Math.max(val, min), max);
+class Nav {    
+    static Heading = 0;
+    static Elevation = 0
+    static {
+        document.addEventListener("pointerlockchange", () => {
+            if (document.pointerLockElement === canvas) canvas.addEventListener("mousemove", Nav.update);
+            else canvas.removeEventListener("mousemove", Nav.update);
+        });
+        canvas.addEventListener("click", () => {
+            if (document.pointerLockElement === canvas) document.exitPointerLock();
+            else canvas.requestPointerLock();
+        });
+        // canvas.addEventListener("wheel", (event) => {
+        //     cameraPos[Y] -= event.deltaY * 0.003 * (Key.Shift * 5 + 1);
+        //     cameraPos[Y] = Math.clamp(cameraPos[Y], 0.1, 80);
+        // });
+    }
+    static update(e) {
+        const turnSpeed = 0.001;
+        Nav.Heading += e.movementX * turnSpeed;
+        Nav.Elevation -= e.movementY * turnSpeed;
+        Nav.Elevation = Math.clamp(Nav.Elevation, -Math.PI / 2 + 0.01, Math.PI / 2 - 0.01);
+    }
+}
 
 class Shape3d {
     //model = [];
@@ -40,15 +89,13 @@ class Shape3d {
     lineTo(p) { view.lineTo(p.x, p.y); }
     line(p1, p2) { view.moveTo(p1.x, p1.y); view.lineTo(p2.x, p2.y); }
 }
-
 class Camera {
     position = { x: 0, y: 0, z: 0 };
-    rotation = { x: 0, y: 0, z: 0 };
+    rotation = { x: 0, y: 0 };
     static aspect = canvas.width / canvas.height;
     projection = { fov: Math.PI / 2, near: 0.1, far: 1000 };
     static { addEventListener("resize", () => { this.aspect = canvas.width / canvas.height; }); }
 }
-
 class Cube extends Shape3d {
     model = [
         [-1, -1, -1],
@@ -111,7 +158,6 @@ class Pyramid extends Shape3d {
         view.stroke();
     }
 }
-
 class TriangularPyramid extends Shape3d {
     model = [
         [0, 1, 0],
@@ -185,7 +231,12 @@ function rotate(point, axis, angle) {
 function toLocalSpace(point, rotation, scale = 1) {
     // rotate
     const ry = rotateY(point, rotation.y);
-    const rx = rotateX(ry, rotation.x);
+    //const rx = rotateX(ry, rotation.x);
+
+    // right vector
+    const right = { x: 1, y: 0, z: 0 };
+    const axis = rotateY(right, rotation.y);
+    const rx = rotate(ry, axis, rotation.x);
 
     // scale 
     return {
@@ -208,11 +259,14 @@ function toViewSpace(point, camera) {
     // Translate relative to camera
     const cp = subtract(point, camera.position);
 
-    // Inverse rotate Y
+    // Inverse rotate
     const ry = rotateY(cp, -camera.rotation.y);
+    //const rx = rotateX(ry, -camera.rotation.x);
 
-    // Inverse rotate X
-    const rx = rotateX(ry, -camera.rotation.x);
+    // right vector
+    const right = { x: 1, y: 0, z: 0 };
+    const axis = rotateY(right, -camera.rotation.y);
+    const rx = rotate(ry, axis, -camera.rotation.x);
 
     return rx;
 }
@@ -302,7 +356,7 @@ const projectedPoint = projectPoint(
 //drawPoint(projectedPoint);
 
 const camera = new Camera();
-const cube = new TriangularPyramid();
+const cube = new Cube();
 cube.position.z = -5;
 
 //#region GUI
@@ -344,6 +398,10 @@ function animate() {
     //cube.rotation.y += 0.01;
     //cube.position.x += 0.01;
     //camera.position.z += 0.01;
+
+    camera.rotation.y = Nav.Heading;
+    camera.rotation.x = Nav.Elevation;
+
     cube.draw(camera);
 }
 animate();

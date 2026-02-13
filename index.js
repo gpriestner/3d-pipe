@@ -4,6 +4,7 @@ Math.clamp = (val, min, max) => Math.min(Math.max(val, min), max);
 function resize() {
     canvas.width = innerWidth;
     canvas.height = innerHeight;
+    canvas.aspect = canvas.width / canvas.height;
 }
 resize();
 window.addEventListener("resize", resize);
@@ -78,9 +79,10 @@ class Shape3d {
         toLocalSpace(point, this.rotation, this.scale);
         toWorldSpace(point, this.position);
         toViewSpace(point, camera);
-        toClipSpace(point, camera);
-        toNormalizedDeviceCoordinates(point);
-        toScreenSpace(point, canvas);
+        //toClipSpace(point, camera);
+        //toNormalizedDeviceCoordinates(point);
+        //toScreenSpace(point, canvas);
+        toXySpace(point, canvas);
     }
     draw(camera) {
         // base draw just draws raw points for debugging
@@ -105,9 +107,9 @@ class Camera {
     position = { x: 0, y: 0, z: 0 };
     rotation = { x: 0, y: 0 };
     projection = {};
-    static aspect = canvas.width / canvas.height;
-    static { addEventListener("resize", () => { this.aspect = canvas.width / canvas.height; }); }
-    constructor(fov = Math.PI / 2, near = 1, far = 100) {
+    static aspect = canvas.height / canvas.width;
+    static { addEventListener("resize", () => { this.aspect = canvas.height / canvas.width; }); }
+    constructor(fov = Math.PI / 2, near = 1, far = 101) {
         this.projection.fov = fov;
         this.projection.near = near;
         this.projection.far = far;
@@ -241,7 +243,7 @@ class Cube extends Shape3d {
         //     }
         // }
 
-        for (const face of this.faces) { face.draw(projected, camera); }
+        for (const face of this.faces) face.draw(projected, camera);
 
         //view.stroke();
     }
@@ -297,7 +299,6 @@ class TriangularPyramid extends Shape3d {
         view.stroke();
     }
 }
-
 //#region Utils
 // Add vector to point
 function add(point, vector) {
@@ -339,15 +340,16 @@ function normalize(v) {
 // convert from degrees to radians
 function toRadians(degrees) { return degrees * Math.PI / 180; }
 function line(p1, p2) {
-    if (p1.clipped && p2.clipped) return;
-    view.beginPath();
     if (!p1.clipped && !p2.clipped) {
+        view.beginPath();
         view.moveTo(p1.x, p1.y);
         view.lineTo(p2.x, p2.y);
         view.stroke();
         return;
     }
+    if (p1.clipped && p2.clipped) return;
     const n = clipLine(p1, p2);
+    view.beginPath();
     view.moveTo(n.p1.x, n.p1.y);
     view.lineTo(n.p2.x, n.p2.y);
     view.arc(n.p2.x, n.p2.y, 12, 0, Math.PI * 2); // debugging
@@ -437,6 +439,7 @@ function centerPoint(...points) {
     center.z /= points.length;
     return center;
 }
+//#endregion Utils
 //#region Rotations
 function rotateY(point, angle) {
     const cosA = Math.cos(angle);
@@ -453,7 +456,6 @@ function rotateX(point, angle) {
     const z = point.y * sinA + point.z * cosA;
     return { x: point.x, y, z };
 }
-
 // Rotate a 3d point around an axis using Rodrigues rotation formula
 function rotate(point, axis, angle) {
     const cos = Math.cos(angle);
@@ -466,7 +468,6 @@ function rotate(point, axis, angle) {
     };
 }
 //#endregion Rotations
-//#endregion Utils
 //#region 3d Transformations
 function toLocalSpace(p, rotation, scale = 1) {
     // scale
@@ -527,8 +528,9 @@ function toClipSpace(p, camera) {
 
     const f = 1 / Math.tan(fov * 0.5);
 
-    const A = (far + near) / (near - far);
-    const B = (2 * far * near) / (near - far);
+    const d = near - far;
+    const A = (far + near) / d;
+    const B = (2 * far * near) / d;
 
     const x_clip = p.view.x * (f / aspect);
     const y_clip = p.view.y * f;
@@ -536,8 +538,10 @@ function toClipSpace(p, camera) {
     const w_clip = -p.view.z; // positive in front of the camera for z < 0
 
     // Frustum test in clip space: -w ≤ x,y,z ≤ w
-    if (Math.abs(x_clip) > w_clip) clipped = true;      // left/right planes
-    if (Math.abs(y_clip) > w_clip) clipped = true;      // top/bottom planes
+    if (Math.abs(x_clip) > w_clip) 
+        clipped = true;      // left/right planes
+    if (Math.abs(y_clip) > w_clip) 
+        clipped = true;      // top/bottom planes
     if (z_clip < -w_clip || z_clip > w_clip) clipped = true; // near/far in OpenGL
 
     const clip = { x: x_clip, y: y_clip, z: z_clip, w: w_clip, clipped };
@@ -577,6 +581,15 @@ function toScreenSpace(p, c) {
 
     p.screen = screen;
 }
+function toXySpace(p, c) {
+    const x = p.view.x / p.view.z * Camera.aspect; // (Math.abs(p.view.z) * Math.tan(camera.projection.fov / 2) * Camera.aspect);
+    const y = p.view.y / p.view.z; // (Math.abs(p.view.z) * Math.tan(camera.projection.fov / 2));
+    const screen = {
+        x: x * c.width + c.width / 2,
+        y: y * c.height + c.height / 2,
+    };
+    p.screen = screen;
+}
 //#endregion
 function projectPoint(point, rotation, scale, position, camera, screen) {
     const local = toLocalSpace(point, rotation, scale);
@@ -587,10 +600,9 @@ function projectPoint(point, rotation, scale, position, camera, screen) {
     toScreenSpace(ndc, screen);
 }
 
-
 const camera = new Camera(Math.PI / 3);
 const cube = new Cube();
-cube.position.z = -10;
+cube.position.z = -20;
 
 //#region GUI
 const gui = new dat.GUI();
@@ -625,7 +637,6 @@ cameraProjectionFolder.open();
 //#endregion
 
 let lastTs = 0;
-
 function animate(ts) {
     requestAnimationFrame(animate);
     const delta = ts - lastTs;

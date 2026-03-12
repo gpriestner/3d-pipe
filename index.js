@@ -529,6 +529,7 @@ function toClipSpace(p, camera) {
     const f = 1 / Math.tan(fov * 0.5);
 
     const d = near - far;
+    // const d = far - near;
     const A = (far + near) / d;
     const B = (2 * far * near) / d;
 
@@ -652,4 +653,21 @@ function animate(ts) {
     cube.rotation.y += Math.PI * 2 * 0.25 * (delta / 1000);
     cube.rotation.x += Math.PI * 2 * 0.1 * (delta / 1000);
 }
-requestAnimationFrame(animate);
+//requestAnimationFrame(animate);
+
+function test01() {
+    const cam = new Camera();
+
+    const p1 = { view: { x: 0, y: 0, z: -1 }};
+    toClipSpace(p1, cam);
+
+    const p2 = { view: { x: 0, y: 0, z: -101 }};
+    toClipSpace(p2, cam);
+
+    const near = p1.clip.z / p1.clip.w;
+    const far = p2.clip.z / p2.clip.w;
+
+    console.log("near: " + near);
+    console.log("far " + far);
+}
+test01();

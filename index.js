@@ -105,7 +105,7 @@ function animate(ts) {
 
     scene.draw(camera, delta);
 }
-requestAnimationFrame(animate);
+//requestAnimationFrame(animate);
 
 //#region Tests
 function clipSpace(p, camera) {
@@ -114,20 +114,19 @@ function clipSpace(p, camera) {
     return Util.scale(point.clip, 1 / point.clip.w);
 }
 function test01() {
-    const cam = new Camera(Math.PI / 2);
-    cam.position = { x: 0, y: 0, z: 0 };
+    const cam = new Camera();
 
-    const pNear = { x: 0, y: 0, z: -1 };
-    const clipNear = clipSpace(pNear, cam);
-    console.log(clipNear);
+    const p1 = { view: { x: 0, y: 0, z: -1 }};
+    toClipSpace(p1, cam);
 
-    const pFar = { x: 0, y: 0, z: -101 };
-    const clipFar = clipSpace(pFar, cam);
-    console.log(clipFar);
+    const p2 = { view: { x: 0, y: 0, z: -101 }};
+    toClipSpace(p2, cam);
 
-    const p1 = { x: -10, y: -10, z: -10 };
-    const clip1 = clipSpace(p1, cam);
-    console.log(clip1);
+    const near = p1.clip.z / p1.clip.w;
+    const far = p2.clip.z / p2.clip.w;
+
+    console.log("near: " + near);
+    console.log("far " + far);
 }
 
 //test01();

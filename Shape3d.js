@@ -7,11 +7,12 @@ export class Shape3d {
     position = { x: 0, y: 0, z: 0 };
     rotation = { x: 0, y: 0, z: 0 };
     scale = 1;
-    constructor(x = 0, y = 0, z = 0) {
+    constructor(x = 0, y = 0, z = 0, color = "grey") {
         this.position.x = x;
         this.position.y = y;
         this.position.z = z;
         this.view = view;
+        this.color = Util.parseColor(color);
     }
     projectPoints(camera) {
         // for each point in model, project to 2d screen space

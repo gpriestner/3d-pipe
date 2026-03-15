@@ -212,6 +212,8 @@ export class Util {
         return [r, g, b];
     }
     static parseColor(color) {
+        if (color == null) return null;
+        if (Array.isArray(color)) return color;
         const el = document.createElement('span');
         el.style.color = color;
         el.style.display = 'none';
@@ -225,5 +227,8 @@ export class Util {
     }
     static colorToString(c) {
         return `rgb(${c[0]}, ${c[1]}, ${c[2]})`;
+    }
+    static rndColor() {
+        return [Math.floor(Math.random() * 256), Math.floor(Math.random() * 256), Math.floor(Math.random() * 256)];
     }
 }

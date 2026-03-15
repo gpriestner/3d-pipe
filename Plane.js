@@ -35,7 +35,7 @@ export class Plane extends Shape3d {
                 if (p1.clipped && p2.clipped && p3.clipped && p4.clipped) continue;
 
                 //this.drawLines(p1, p2, p3, p4);
-                const color = (x + z) % 2 === 0 ? "rgba(255,255,255,0.1)" : "rgba(255,255,255,0.05)";
+                const color = (x + z) % 2 === 0 ? "grey" : "lightgrey";
                 this.fillFace(color, p1, p2, p3, p4);
             }
         }

@@ -28,5 +28,9 @@ export class Nav {
         // const heading = { x: -sin, y: 0, z: cos };
         // const pitch = { x: cos, y: 0, z: sin };
         // Nav.Direction = Util.rotate(heading, pitch, -Nav.Elevation);
+        const scale = 1.2;
+        canvas.backgroundX -= e.movementX * scale;
+        canvas.backgroundY -= e.movementY * scale;
+        canvas.style.backgroundPosition = `${canvas.backgroundX}px ${canvas.backgroundY}px`;
     }
 }

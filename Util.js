@@ -60,19 +60,19 @@ export class Util {
     // convert from degrees to radians
     static toRadians(degrees) { return degrees * Math.PI / 180; }
     static line(p1, p2) {
-        if (!p1.clipped && !p2.clipped) {
+        if (!p1.screen.clipped && !p2.screen.clipped) {
             Util.view.beginPath();
-            Util.view.moveTo(p1.x, p1.y);
-            Util.view.lineTo(p2.x, p2.y);
+            Util.view.moveTo(p1.screen.x, p1.screen.y);
+            Util.view.lineTo(p2.screen.x, p2.screen.y);
             Util.view.stroke();
             return;
         }
-        if (p1.clipped && p2.clipped) return;
+        if (p1.screen.clipped && p2.screen.clipped) return;
         const n = Util.clipline(p1, p2);
         Util.view.beginPath();
-        Util.view.moveTo(n.p1.x, n.p1.y);
-        Util.view.lineTo(n.p2.x, n.p2.y);
-        Util.view.arc(n.p2.x, n.p2.y, 12, 0, Math.PI * 2); // debugging
+        Util.view.moveTo(n.p1.screen.x, n.p1.screen.y);
+        Util.view.lineTo(n.p2.screen.x, n.p2.screen.y);
+        Util.view.arc(n.p2.screen.x, n.p2.screen.y, 12, 0, Math.PI * 2); // debugging
         Util.view.stroke();
     }
     static clipline(p1, p2) {

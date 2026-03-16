@@ -11,18 +11,18 @@ export class TriangularPyramid extends Shape3d {
     ];
     draw(camera) {
         view.strokeStyle = "black";
-        view.Util.lineWidth = 4;
-        view.Util.lineCap = "round";
+        view.lineWidth = 4;
+        view.lineCap = "round";
         const projected = this.projectPoints(camera);
         view.beginPath();
         // base
-        this.Util.line(projected[1], projected[2]);
-        this.Util.line(projected[2], projected[3]);
-        this.Util.line(projected[3], projected[1]);
+        Util.line(projected[1], projected[2]);
+        Util.line(projected[2], projected[3]);
+        Util.line(projected[3], projected[1]);
         // sides
-        this.Util.line(projected[0], projected[1]);
-        this.Util.line(projected[0], projected[2]);
-        this.Util.line(projected[0], projected[3]);
+        Util.line(projected[0], projected[1]);
+        Util.line(projected[0], projected[2]);
+        Util.line(projected[0], projected[3]);
         view.stroke();
     }
 }

@@ -43,6 +43,9 @@ for (let i = 0; i < 20; i++) {
     scene.add(cube);
 }
 
+const tp = new TriangularPyramid(0, 1, -5, "cyan");
+scene.add(tp);
+
 class Process {
     static Input() {
         if (Key.TurnLeft) Nav.Heading -= 1 * delta;
@@ -54,6 +57,7 @@ class Process {
         if (Key.StrafeRight) camera.position = Util.add(camera.position, Util.scale(camera.right, 10 * delta));
         if (Key.Higher) camera.position.y += 10 * delta;
         if (Key.Lower) camera.position.y -= 10 * delta;
+        if (camera.position.y < 3) camera.position.y = 3;
     }
 }
 
@@ -105,7 +109,7 @@ function animate(ts) {
 
     scene.draw(camera, delta);
 }
-//requestAnimationFrame(animate);
+requestAnimationFrame(animate);
 
 //#region Tests
 function clipSpace(p, camera) {

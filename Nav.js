@@ -3,20 +3,48 @@ import { Util } from "./Util.js";
 export class Nav {
     static Heading = 0;
     static Elevation = 0;
+    static Forward = false;
+    static Reverse = false;
+    static Speed = 0;
+    static Left = false;
+    static Right = false;
+    static WheelRelease = null;
     // static Direction = { x: 0, y: 0, z: -1 };
     static {
         document.addEventListener("pointerlockchange", () => {
-            if (document.pointerLockElement === canvas) canvas.addEventListener("mousemove", Nav.update);
-            else canvas.removeEventListener("mousemove", Nav.update);
+            if (document.pointerLockElement === canvas) {
+                canvas.addEventListener("mousemove", Nav.update);
+                canvas.addEventListener("mousedown", Nav.mousedown);
+                canvas.addEventListener("mouseup", Nav.mouseup);
+                canvas.addEventListener("wheel", Nav.wheel);
+            } else {
+                canvas.removeEventListener("mousemove", Nav.update);
+                canvas.removeEventListener("mousedown", Nav.mousedown);
+                canvas.removeEventListener("mouseup", Nav.mouseup);
+                canvas.removeEventListener("wheel", Nav.wheel);
+            }
         });
-        canvas.addEventListener("click", () => {
-            if (document.pointerLockElement === canvas) document.exitPointerLock();
-            else canvas.requestPointerLock();
+        canvas.addEventListener("click", (e) => {
+            if (e.button === 0) {
+                if (document.pointerLockElement === canvas) document.exitPointerLock();
+                else canvas.requestPointerLock();
+            }
         });
-        // canvas.addEventListener("wheel", (event) => {
-        //     cameraPos[Y] -= event.deltaY * 0.003 * (Key.Shift * 5 + 1);
-        //     cameraPos[Y] = Math.clamp(cameraPos[Y], 0.1, 80);
-        // });
+        canvas.addEventListener("wheel", (e) => {
+            Nav.Speed -= e.deltaY * 0.1;
+            Nav.Speed = Util.clamp(Nav.Speed, -50, 50);
+
+            if (e.deltaX < 0) Nav.Left = true; 
+            else if (e.deltaX > 0) Nav.Right = true;
+            if (Nav.Left || Nav.Right) {
+                clearTimeout(Nav.WheelRelease);
+                Nav.WheelRelease = setTimeout(() => {
+                    Nav.Left = false;
+                    Nav.Right = false;
+                }, 100);
+            }
+            e.preventDefault();
+        });
     }
     static update(e) {
         const turnSpeed = 0.001;
@@ -32,5 +60,30 @@ export class Nav {
         canvas.backgroundX -= e.movementX * scale;
         canvas.backgroundY -= e.movementY * scale;
         canvas.style.backgroundPosition = `${canvas.backgroundX}px ${canvas.backgroundY}px`;
+        e.preventDefault();
+    }
+    static mousedown(e) {
+        if (e.button === 4) {
+            Nav.Forward = true;
+            e.preventDefault();
+        }
+        if (e.button === 3) {
+            Nav.Reverse = true;
+            e.preventDefault();
+        }
+    }
+    static mouseup(e) {
+        if (e.button === 4) {
+            Nav.Forward = false;
+            e.preventDefault();
+        }
+        if (e.button === 3) {
+            Nav.Reverse = false;
+            e.preventDefault();
+        }
+        if (e.button === 1) {
+            Nav.Speed = 0;
+            e.preventDefault();
+        }
     }
 }

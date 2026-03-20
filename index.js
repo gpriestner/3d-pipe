@@ -51,8 +51,11 @@ class Process {
         if (Key.TurnLeft) Nav.Heading -= 1 * delta;
         if (Key.TurnRight) Nav.Heading += 1 * delta;
 
-        if (Key.Forward) camera.position = Util.add(camera.position, Util.scale(camera.direction, 10 * delta));
-        if (Key.Backward) camera.position = Util.add(camera.position, Util.scale(camera.backward, 10 * delta));
+        if (Nav.Speed) camera.position = Util.add(camera.position, Util.scale(camera.direction, Nav.Speed * delta));
+        if (Nav.Left) camera.position = Util.add(camera.position, Util.scale(camera.left, 10 * delta));
+        if (Nav.Right) camera.position = Util.add(camera.position, Util.scale(camera.right, 10 * delta));
+        if (Key.Forward || Nav.Forward) camera.position = Util.add(camera.position, Util.scale(camera.direction, 10 * delta));
+        if (Key.Backward || Nav.Reverse) camera.position = Util.add(camera.position, Util.scale(camera.backward, 10 * delta));
         if (Key.StrafeLeft) camera.position = Util.add(camera.position, Util.scale(camera.left, 10 * delta));
         if (Key.StrafeRight) camera.position = Util.add(camera.position, Util.scale(camera.right, 10 * delta));
         if (Key.Higher) camera.position.y += 10 * delta;

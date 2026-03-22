@@ -11,7 +11,8 @@ export class TriangularPyramid extends Shape3d {
     ];
     draw(camera) {
         view.strokeStyle = "black";
-        view.lineWidth = 4;
+        view.shadowColor = view.strokeStyle;
+        view.lineWidth = 3;
         view.lineCap = "round";
         const projected = this.projectPoints(camera);
         view.beginPath();

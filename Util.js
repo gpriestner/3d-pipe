@@ -48,9 +48,9 @@ export class Util {
     static dot(v1, v2) {
         return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
     }
-    // Util.normalize vector
+    // Normalize vector (convert to unit length)
     static normalize(v) {
-        const length = Math.sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
+        const length = Math.hypot(v.x, v.y, v.z);
         return {
             x: v.x / length,
             y: v.y / length,
@@ -71,34 +71,34 @@ export class Util {
         const n = Util.clipline(p1, p2);
         Util.view.beginPath();
         Util.view.moveTo(n.p1.screen.x, n.p1.screen.y);
-        Util.view.lineTo(n.p2.screen.x, n.p2.screen.y);
-        Util.view.arc(n.p2.screen.x, n.p2.screen.y, 12, 0, Math.PI * 2); // debugging
+        Util.view.lineTo(n.p2.x, n.p2.y);
+        Util.view.arc(n.p2.x, n.p2.y, 12, 0, Math.PI * 2); // debugging
         Util.view.stroke();
     }
     static clipline(p1, p2) {
-        const inside = p1.clipped ? p2 : p1;
-        const outside = p1.clipped ? p1 : p2;
+        const inside = p1.screen.clipped ? p2 : p1;
+        const outside = p1.screen.clipped ? p1 : p2;
         const clips = [];
 
         const xMin = 0, yMin = 0;
         const xMax = Util.canvas.width;
         const yMax = Util.canvas.height;
 
-        const dx = outside.x - inside.x;
-        const dy = outside.y - inside.y;
+        const dx = outside.screen.x - inside.screen.x;
+        const dy = outside.screen.y - inside.screen.y;
         const eps = 1e-6;
 
         if (Math.abs(dx) > eps) { // check vertical boundaries
             {
                 //check left boundary
-                const t = (xMin - inside.x) / dx;
-                const y = inside.y + t * dy;
+                const t = (xMin - inside.screen.x) / dx;
+                const y = inside.screen.y + t * dy;
                 if (t >= 0) clips.push({ t, x: xMin, y });
             }
             {
                 //check right boundary
-                const t = (xMax - inside.x) / dx;
-                const y = inside.y + t * dy;
+                const t = (xMax - inside.screen.x) / dx;
+                const y = inside.screen.y + t * dy;
                 if (t >= 0) clips.push({ t, x: xMax, y });
             }
         }
@@ -106,14 +106,14 @@ export class Util {
         if (Math.abs(dy) > eps) { // check horizontal boundaries
             {
                 // check top boundary
-                const t = (yMin - inside.y) / dy;
-                const x = inside.x + t * dx;
+                const t = (yMin - inside.screen.y) / dy;
+                const x = inside.screen.x + t * dx;
                 if (t >= 0) clips.push({ t, x, y: yMin });
             }
             {
                 // check bottom boundary
-                const t = (yMax - inside.y) / dy;
-                const x = inside.x + t * dx;
+                const t = (yMax - inside.screen.y) / dy;
+                const x = inside.screen.x + t * dx;
                 if (t >= 0) clips.push({ t, x, y: yMax });
             }
         }
@@ -137,7 +137,7 @@ export class Util {
     }
     // Calculate the unit length of a vector
     static unit(v) {
-        const length = Math.sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
+        const length = Math.hypot(v.x, v.y, v.z);
         return {
             x: v.x / length,
             y: v.y / length,
@@ -148,11 +148,15 @@ export class Util {
     static unitNormal(p1, p2, p3) {
         const u = Util.subtract(p2, p1);
         const v = Util.subtract(p3, p1);
-        const nx = u.y * v.z - u.z * v.y;
-        const ny = u.z * v.x - u.x * v.z;
-        const nz = u.x * v.y - u.y * v.x;
-        const l = Math.hypot(nx, ny, nz);
-        return { x: nx / l, y: ny / l, z: nz / l };
+        return Util.normalize(Util.cross(u, v));
+    }
+    // calculate the cross product of two vectors
+    static cross(v1, v2) {
+        return {
+            x: v1.y * v2.z - v1.z * v2.y,
+            y: v1.z * v2.x - v1.x * v2.z,
+            z: v1.x * v2.y - v1.y * v2.x
+        };
     }
     // calculate the center of a set of points
     static centroid(...points) {
@@ -230,5 +234,26 @@ export class Util {
     }
     static rndColor() {
         return [Math.floor(Math.random() * 256), Math.floor(Math.random() * 256), Math.floor(Math.random() * 256)];
+    }
+    // calculate linear interpolation between two points
+    static lerp(p1, p2, t) {
+        return {
+            x: p1.x + (p2.x - p1.x) * t,
+            y: p1.y + (p2.y - p1.y) * t,
+            z: p1.z + (p2.z - p1.z) * t
+        };
+    }
+    // calculate smoothstep interpolation between two points
+    static smoothstep(p1, p2, t) {
+        t = t * t * (3 - 2 * t);
+        return {
+            x: p1.x + (p2.x - p1.x) * t,
+            y: p1.y + (p2.y - p1.y) * t,
+            z: p1.z + (p2.z - p1.z) * t
+        };
+    }
+    // calculte horizontal distance between two points (ignoring y)
+    static horizontalDistance(p1, p2) {
+        return Math.hypot(p2.x - p1.x, p2.z - p1.z);
     }
 }

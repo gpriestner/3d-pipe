@@ -1,22 +1,47 @@
 import { Shape3d } from "./Shape3d.js";
+import { Util } from "./Util.js";
+class Terrain {
+    constructor(x, y, z, r) {
+        this.position = { x, y, z };
+        this.radius = r;
+    }
+}
+
 export class Plane extends Shape3d {
     model = [];
+    terrain = [];
     constructor(sides, scale = 100) {
         super();
         this.sides = sides;
         this.scale = scale;
         this.offset = -sides / 2;
+
+        const tp1 = new Terrain(-5, 7, -5, 8);
+        const tp2 = new Terrain(5, -5, -5, 5);
+        this.terrain.push(tp1);
+        this.terrain.push(tp2);
+
         for (let z = 0; z <= sides; z++) {
             for (let x = 0; x <= sides; x++) {
+
                 const p1 = [(x + this.offset) * scale, 0, (z + this.offset) * scale];
+                for (const tp of this.terrain) {
+                    const hd = Util.horizontalDistance(tp.position, { x: p1[0], y: 0, z: p1[2] });
+                    if (hd < tp.radius) {
+                        const t = hd / tp.radius;
+                        const h = Util.smoothstep(tp.position, { x: p1[0], y: 0, z: p1[2] }, t).y;
+                        p1[1] += h;
+                    }
+                }
+
                 this.model.push(p1);
             }
         }
     }
     draw(camera) {
         const projected = this.projectPoints(camera);
-        this.view.strokeStyle = "white";
-        this.view.lineWidth = 1;
+        // this.view.strokeStyle = "white";
+        // this.view.lineWidth = 1;
 
         const step = this.sides + 1;
         for (let z = 0; z < this.sides; z++) {
@@ -35,8 +60,10 @@ export class Plane extends Shape3d {
                 if (p1.clipped && p2.clipped && p3.clipped && p4.clipped) continue;
 
                 //this.drawLines(p1, p2, p3, p4);
-                const color = (x + z) % 2 === 0 ? "grey" : "lightgrey";
-                this.fillFace(color, p1, p2, p3, p4);
+                const color = (x + z) % 2 ? "grey" : "lightgrey";
+                //this.fillFace(color, p1, p2, p3, p4);
+                this.fillFace(color, p1, p2, p3);
+                this.fillFace(color, p1, p3, p4);
             }
         }
     }

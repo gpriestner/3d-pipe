@@ -9,6 +9,9 @@ import { Light } from "./Light.js";
 import { Scene } from "./Scene.js";
 import { Pyramid } from "./Pyramid.js";
 import { TriangularPyramid } from "./TriangularPyramid.js";
+import { Settings } from "./Settings.js";
+const settings = new Settings();
+const canvas = document.getElementById("canvas");
 const view = canvas.getContext("2d");
 canvas.backgroundX = 0;
 canvas.backgroundY = 0;
@@ -19,13 +22,14 @@ function resize() {
     canvas.aspect = canvas.width / canvas.height;
     view.shadowOffsetX = 1;
     view.shadowOffsetY = 1;
+    view.font = "16px Arial";
 }
 resize();
 window.addEventListener("resize", resize);
 
 
 const scene = new Scene();
-const plane = new Plane(20, 2);
+const plane = new Plane(40, 1);
 scene.addPlane(plane);
 const camera = new Camera(Math.PI / 3);
 camera.position = { x: 0, y: 10, z: 20 };
@@ -66,6 +70,12 @@ class Process {
 
 //#region GUI
 const gui = new dat.GUI();
+gui.add(settings, "sky").onChange((value) => {
+    let url = "";
+    if (value) url = "url(res/sky02.jpg)";
+    else url = "url(res/night.png)";
+    canvas.style.backgroundImage = url;
+});
 const lightFolder = gui.addFolder("Light");
 
 const positionFolder = lightFolder.addFolder("Position");
@@ -96,7 +106,17 @@ cameraProjectionFolder.open();
 
 let prev_ts = 0;
 let delta = 0;
+let fps = 0;
+let frameCount = 0;
+let prevTime = 0;
 function animate(ts) {
+    fps += 1;
+    if (ts - prevTime >= 1000) {
+        //console.log("FPS: " + fps);
+        frameCount = fps;
+        fps = 0;
+        prevTime = ts;
+    }
     requestAnimationFrame(animate);
     delta = (ts - prev_ts) / 1000;
     prev_ts = ts;
@@ -111,6 +131,9 @@ function animate(ts) {
 
 
     scene.draw(camera, delta);
+    // Write current fps on the screen
+    view.fillStyle = "white";
+    view.fillText("FPS: " + frameCount, 10, 20);
 }
 requestAnimationFrame(animate);
 

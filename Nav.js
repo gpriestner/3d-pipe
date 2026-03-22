@@ -31,7 +31,7 @@ export class Nav {
             }
         });
         canvas.addEventListener("wheel", (e) => {
-            Nav.Speed -= e.deltaY * 0.1;
+            Nav.Speed -= e.deltaY * 0.025;
             Nav.Speed = Util.clamp(Nav.Speed, -50, 50);
 
             if (e.deltaX < 0) Nav.Left = true; 

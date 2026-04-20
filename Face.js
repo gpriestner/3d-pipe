@@ -35,7 +35,7 @@ export class Face {
 
         this.drawFace(vertices);
         //this.drawWireframe(vertices);
-        //this.drawNormal(vertices, camera);
+        this.drawNormal(vertices, camera);
     }
     drawWireframe(vertices) {
         for (let i = 0; i < vertices.length; i++) {
@@ -49,7 +49,7 @@ export class Face {
         let finalColor = [0, 0, 0];
         const normal = this.updateNormal();
         for (const light of this.parent.scene.lights) {
-            const toLight = Util.unit(Util.subtract(light.position, vertices[0].world));
+            const toLight = Util.normalize(Util.subtract(light.position, vertices[0].world));
             const dp = Util.dot(normal, toLight);
             const level = Util.clamp(dp, 0, 1);
             finalColor = Util.blend(finalColor, light.color, level);
@@ -74,6 +74,7 @@ export class Face {
         view.fillStyle = colorStr;
         view.shadowColor = view.fillStyle;
         view.fill();
+        //view.stroke();
     }
     updateNormal() {
         const normal = { model: this.unitNormal };
@@ -90,7 +91,7 @@ export class Face {
         const normal = Util.scale(this.unitNormal, 0.5);
         const normalEnd = { model: Util.add(cp, normal) };
         this.parent.projectPoint(normalEnd, camera);
-        Util.line(center.screen, normalEnd.screen);
+        Util.line(center, normalEnd);
 
         // draw dots
         Util.drawPoint(center.screen, "skyblue");

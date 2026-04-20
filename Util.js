@@ -135,15 +135,15 @@ export class Util {
         Util.view.stroke();
         Util.view.fillStyle = oldStyle;
     }
-    // Calculate the unit length of a vector
-    static unit(v) {
-        const length = Math.hypot(v.x, v.y, v.z);
-        return {
-            x: v.x / length,
-            y: v.y / length,
-            z: v.z / length
-        };
-    }
+    // Calculate the unit length of a vector - DEPRECATED - use 'normalize' above
+    // static unit(v) {
+    //     const length = Math.hypot(v.x, v.y, v.z);
+    //     return {
+    //         x: v.x / length,
+    //         y: v.y / length,
+    //         z: v.z / length
+    //     };
+    // }
     // Calculate the unit normal to a plane defined by 3 points
     static unitNormal(p1, p2, p3) {
         const u = Util.subtract(p2, p1);

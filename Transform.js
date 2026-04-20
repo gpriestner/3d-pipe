@@ -80,7 +80,7 @@ export class Tx {
 
         p.screen = screen;
     }
-    static toXySpace(p, c) {
+    static toXySpace(p, c, camera) {
         const x = p.view.x / p.view.z * Camera.aspect; // (Math.abs(p.view.z) * Math.tan(camera.projection.fov / 2) * Camera.aspect);
         const y = p.view.y / p.view.z; // (Math.abs(p.view.z) * Math.tan(camera.projection.fov / 2));
         const screen = {

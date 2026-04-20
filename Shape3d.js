@@ -30,10 +30,10 @@ export class Shape3d {
         Tx.toLocalSpace(point, this.rotation, this.scale);
         Tx.toWorldSpace(point, this.position);
         Tx.toViewSpace(point, camera);
-        Tx.toClipSpace(point, camera);
-        Tx.toNdcSpace(point);
-        Tx.toScreenSpace(point, canvas);
-        // Tx.toXySpace(point, canvas);
+        // Tx.toClipSpace(point, camera);
+        // Tx.toNdcSpace(point);
+        // Tx.toScreenSpace(point, canvas);
+        Tx.toXySpace(point, canvas, camera);
     }
     update(delta) {
         if (this.auto) {

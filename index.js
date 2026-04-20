@@ -23,6 +23,8 @@ function resize() {
     view.shadowOffsetX = 1;
     view.shadowOffsetY = 1;
     view.font = "16px Arial";
+    //view.lineCap = "round";
+    view.lineJoin = "round";
 }
 resize();
 window.addEventListener("resize", resize);
